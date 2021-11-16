@@ -6,8 +6,10 @@ import codecs
 import io
 import os
 import sys
+import platform
+import getpass
 
-# csv input format: 
+# csv input format:
 #   "word";
 #   "meaning";
 #   "<img src='https://contentcdn.lingualeo.com/uploads/picture/12345.png'>";
@@ -21,6 +23,22 @@ import sys
 # out format (separated with \t)
 # "word"	"meaning"	"12345.png"	"transcription"	"example"	[sound:word_date_time.mp3]			"label"
 
+
+def getStoragePath():
+    curOS = platform.system()
+    user = getpass.getuser()
+    prefix = ''
+    ankiPath = ''
+    ankiUser = ''
+
+    if curOS == 'Linux':
+        prefix = '/home'
+        ankiUser = 'User 1'
+        ankiPath = '.local/share/Anki2/'
+    else:
+        raise ValueError('Unsupported OS')
+
+    return prefix + '/' + user + '/' + ankiPath + '/' + ankiUser + '/collection.media/'
 
 # download a file
 def download(link, name):
@@ -52,7 +70,7 @@ def download_image(prefix, postfix, line):
 
         res = "\"" + name + "\""
     return res
-    
+
 # download a sound file
 def download_sound(prefix, postfix, line):
     res = None
@@ -63,9 +81,10 @@ def download_sound(prefix, postfix, line):
         #print(name)
         download(link, name)
         res = "[sound:" + name + "]"
-        
-    return res   
-    
+
+    return res
+
+
 # fin = "lingualeo.csv"
 
 # input file
@@ -75,10 +94,9 @@ fout = "export.txt"
 # input content
 content = []
 # media path
-anki_path = "C:\\Users\\kolan\\AppData\\Roaming\\Anki2\\Kpada\\collection.media\\"
-
+anki_path = getStoragePath()
 dt = datetime.datetime.now().strftime("%y%m%d_%H%M")
-counter = 1 
+counter = 1
 
 str_press_any_key = "\nPress anykey to continue..."
 
@@ -88,12 +106,12 @@ try:
 except IndexError:
     input("No input file." + str_press_any_key)
     sys.exit(1)
- 
+
 # Check if path exits
 if os.path.exists(fin) == False:
     input("The input file does not exist." + str_press_any_key)
     sys.exit(1)
-    
+
 # get the file content
 with io.open(fin, encoding='utf-8') as f:
     for line in f:
@@ -109,7 +127,7 @@ with open(fout, 'w', encoding='utf-8') as f:
         word = fields[0].replace('"', "")
         image = download_image(word, dt, fields[2])
         sound = download_sound(word, dt, fields[5])
-            
+
         print("{0} {1} i={2},\ts={3}".format(str(counter).ljust(3), word.ljust(20), image != None, sound != None))
         counter += 1
 
@@ -133,5 +151,5 @@ with open(fout, 'w', encoding='utf-8') as f:
     # finish
     print(str(counter) + " entries handled and stored at " + anki_path)
     f.close()
-    
+
 input("Done." + str_press_any_key)
